@@ -13,6 +13,7 @@ export type EditorObjectType =
   | "cafe"
   | "toilets"
   | "parking"
+  | "car"
   | "custom-zone"
   | "text-label";
 

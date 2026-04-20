@@ -30,6 +30,7 @@ const objectStyles: Record<string, string> = {
   cafe: "bg-red-400/16 border-red-300/40",
   toilets: "bg-blue-400/16 border-blue-300/40",
   parking: "bg-lime-500/14 border-lime-300/35",
+  car: "bg-yellow-400/20 border-yellow-200/45",
   "custom-zone": "bg-white/10 border-white/25",
   "text-label": "bg-transparent border-dashed border-white/25",
 };
