@@ -2,7 +2,7 @@ import type { ObjectPreset, EditorObjectType } from "@/lib/editor-types";
 
 export const OBJECT_PRESETS: ObjectPreset[] = [
   { type: "padel-court", label: "Padel Court", width: 20, height: 10 },
-  { type: "single-court", label: "Single Court", width: 10, height: 6 },
+  { type: "single-court", label: "Single Court", width: 20, height: 6 },
   { type: "wall", label: "Wall", width: 6, height: 0.3 },
   { type: "glass-wall", label: "Glass Wall", width: 6, height: 0.3 },
   { type: "door", label: "Door", width: 1.2, height: 0.25 },
