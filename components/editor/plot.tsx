@@ -60,7 +60,9 @@ export function Plot() {
         onPointerDown={onViewportPointerDown}
         onPointerMove={onPointerMove}
       >
-        <div className="absolute left-3.5 top-3 rounded-md bg-black/12 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground/52">
+        <div
+          data-export-hide="true"
+          className="absolute left-3.5 top-3 rounded-md bg-black/12 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground/52">
           Plot
         </div>
 
@@ -71,6 +73,7 @@ export function Plot() {
           }}
         >
           <div
+            data-export-plot-root="true"
             className="relative bg-[#0f1a25]"
             style={{
               width: state.plot.width * UNIT_SIZE,
@@ -94,6 +97,7 @@ export function Plot() {
               guide.axis === "x" ? (
                 <div
                   key={guide.id}
+                  data-export-hide="true"
                   className="pointer-events-none absolute w-px bg-cyan-300/80"
                   style={{
                     left: guide.position * UNIT_SIZE,
@@ -104,6 +108,7 @@ export function Plot() {
               ) : (
                 <div
                   key={guide.id}
+                  data-export-hide="true"
                   className="pointer-events-none absolute h-px bg-cyan-300/80"
                   style={{
                     left: guide.start * UNIT_SIZE,
@@ -116,7 +121,9 @@ export function Plot() {
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-3 left-3 rounded bg-black/20 px-2 py-1 text-[10px] text-muted-foreground/70">
+        <div
+          data-export-hide="true"
+          className="pointer-events-none absolute bottom-3 left-3 rounded bg-black/20 px-2 py-1 text-[10px] text-muted-foreground/70">
           {isPanning ? "Panning" : "Select / Multi-select / Resize"}
         </div>
       </div>

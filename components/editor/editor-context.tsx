@@ -63,6 +63,7 @@ export type ProjectContextValue = {
   duplicateProject: (projectId: string, name: string) => void;
   deleteProject: (projectId: string) => void;
   refreshProjects: () => void;
+  buildCurrentProjectRecord: () => ProjectRecord;
 };
 
 export const initialState: EditorState = {
@@ -653,6 +654,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const editorValue = useMemo(() => ({ state, dispatch }), [state]);
   const hasUnsavedChanges = saveStatus !== "saved";
 
+  const buildCurrentProjectRecord = useCallback(
+    () => toProjectRecord(currentProjectId, currentProjectName, state, projectCreatedAt),
+    [currentProjectId, currentProjectName, projectCreatedAt, state],
+  );
+
   const projectValue = useMemo<ProjectContextValue>(
     () => ({
       currentProjectId,
@@ -669,12 +675,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       duplicateProject,
       deleteProject,
       refreshProjects,
+      buildCurrentProjectRecord,
     }),
     [
       createNewProject,
       currentProjectId,
       currentProjectName,
       deleteProject,
+      buildCurrentProjectRecord,
       duplicateProject,
       hasUnsavedChanges,
       isHydrated,
