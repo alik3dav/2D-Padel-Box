@@ -55,6 +55,10 @@ function getObjectVisualStyle(type: EditorObject["type"]): CSSProperties {
   };
 }
 
+function formatDimension(value: number) {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(2).replace(/\.?0+$/, "");
+}
+
 function ObjectLayerImpl({
   objects,
   selectedIds,
@@ -95,6 +99,12 @@ function ObjectLayerImpl({
               ...getObjectVisualStyle(item.type),
             }}
           >
+            {selected && (
+              <span className="pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-semibold leading-none text-white/90">
+                {formatDimension(item.width)}x{formatDimension(item.height)}m
+              </span>
+            )}
+
             <span className="pointer-events-none px-1 text-center leading-tight text-[10px] text-foreground/95 drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]">
               {item.label ?? OBJECT_LABELS[item.type]}
             </span>
