@@ -15,6 +15,106 @@ type ResizeHandle = "nw" | "ne" | "sw" | "se";
 
 const MIN_SIZE = 0.5;
 
+type Point = { x: number; y: number };
+
+function getRotatedAxes(rotation: number) {
+  const radians = (rotation * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  return {
+    xAxis: { x: cos, y: sin },
+    yAxis: { x: -sin, y: cos },
+  };
+}
+
+function dot(a: Point, b: Point) {
+  return a.x * b.x + a.y * b.y;
+}
+
+function getAnchorCorner(start: Rect, rotation: number, handle: ResizeHandle) {
+  const center = { x: start.x + start.width / 2, y: start.y + start.height / 2 };
+  const { xAxis, yAxis } = getRotatedAxes(rotation);
+  const halfW = start.width / 2;
+  const halfH = start.height / 2;
+
+  switch (handle) {
+    case "se":
+      return {
+        x: center.x - xAxis.x * halfW - yAxis.x * halfH,
+        y: center.y - xAxis.y * halfW - yAxis.y * halfH,
+      };
+    case "sw":
+      return {
+        x: center.x + xAxis.x * halfW - yAxis.x * halfH,
+        y: center.y + xAxis.y * halfW - yAxis.y * halfH,
+      };
+    case "ne":
+      return {
+        x: center.x - xAxis.x * halfW + yAxis.x * halfH,
+        y: center.y - xAxis.y * halfW + yAxis.y * halfH,
+      };
+    case "nw":
+      return {
+        x: center.x + xAxis.x * halfW + yAxis.x * halfH,
+        y: center.y + xAxis.y * halfW + yAxis.y * halfH,
+      };
+  }
+}
+
+function resizeFromHandle(start: Rect, handle: ResizeHandle, rotation: number, delta: Point): Rect {
+  const { xAxis, yAxis } = getRotatedAxes(rotation);
+  const localDeltaX = dot(delta, xAxis);
+  const localDeltaY = dot(delta, yAxis);
+
+  let width = start.width;
+  let height = start.height;
+
+  if (handle.includes("e")) {
+    width = Math.max(MIN_SIZE, start.width + localDeltaX);
+  }
+  if (handle.includes("w")) {
+    width = Math.max(MIN_SIZE, start.width - localDeltaX);
+  }
+  if (handle.includes("s")) {
+    height = Math.max(MIN_SIZE, start.height + localDeltaY);
+  }
+  if (handle.includes("n")) {
+    height = Math.max(MIN_SIZE, start.height - localDeltaY);
+  }
+
+  const anchor = getAnchorCorner(start, rotation, handle);
+
+  let centerX = start.x + start.width / 2;
+  let centerY = start.y + start.height / 2;
+
+  switch (handle) {
+    case "se":
+      centerX = anchor.x + xAxis.x * (width / 2) + yAxis.x * (height / 2);
+      centerY = anchor.y + xAxis.y * (width / 2) + yAxis.y * (height / 2);
+      break;
+    case "sw":
+      centerX = anchor.x - xAxis.x * (width / 2) + yAxis.x * (height / 2);
+      centerY = anchor.y - xAxis.y * (width / 2) + yAxis.y * (height / 2);
+      break;
+    case "ne":
+      centerX = anchor.x + xAxis.x * (width / 2) - yAxis.x * (height / 2);
+      centerY = anchor.y + xAxis.y * (width / 2) - yAxis.y * (height / 2);
+      break;
+    case "nw":
+      centerX = anchor.x - xAxis.x * (width / 2) - yAxis.x * (height / 2);
+      centerY = anchor.y - xAxis.y * (width / 2) - yAxis.y * (height / 2);
+      break;
+  }
+
+  return {
+    x: centerX - width / 2,
+    y: centerY - height / 2,
+    width,
+    height,
+  };
+}
+
 function focusedOnFormField() {
   const target = document.activeElement;
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
@@ -116,25 +216,10 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
         const deltaY = (event.clientY - resizeRef.current.startPointerY) / (state.transform.zoom * unitSize);
 
         const start = resizeRef.current.startRect;
-        let x = start.x;
-        let y = start.y;
-        let width = start.width;
-        let height = start.height;
-
-        if (resizeRef.current.handle.includes("e")) {
-          width = Math.max(MIN_SIZE, start.width + deltaX);
-        }
-        if (resizeRef.current.handle.includes("s")) {
-          height = Math.max(MIN_SIZE, start.height + deltaY);
-        }
-        if (resizeRef.current.handle.includes("w")) {
-          width = Math.max(MIN_SIZE, start.width - deltaX);
-          x = start.x + (start.width - width);
-        }
-        if (resizeRef.current.handle.includes("n")) {
-          height = Math.max(MIN_SIZE, start.height - deltaY);
-          y = start.y + (start.height - height);
-        }
+        let { x, y, width, height } = resizeFromHandle(start, resizeRef.current.handle, resizing.rotation, {
+          x: deltaX,
+          y: deltaY,
+        });
 
         if (state.snap.enabled) {
           x = roundToGrid(x, state.grid.size);
