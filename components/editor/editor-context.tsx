@@ -1,9 +1,22 @@
 "use client";
 
-import { createContext, useContext, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type Dispatch,
+  type ReactNode,
+} from "react";
 
 import { PRESET_BY_TYPE } from "@/lib/editor-catalog";
 import { clampRectToPlot } from "@/lib/editor-geometry";
+import { localProjectStorage } from "@/lib/project-storage";
+import { PROJECT_SCHEMA_VERSION, type ProjectRecord, type ProjectSummary } from "@/lib/project-types";
 import type { AlignmentGuide, EditorObject, EditorObjectType, EditorSnapshot, EditorState } from "@/lib/editor-types";
 
 type AddObjectPayload = {
@@ -30,9 +43,29 @@ type EditorAction =
   | { type: "bring-forward" }
   | { type: "send-backward" }
   | { type: "undo" }
-  | { type: "redo" };
+  | { type: "redo" }
+  | { type: "replace-all"; payload: EditorState };
 
-const initialState: EditorState = {
+export type SaveStatus = "saved" | "saving" | "unsaved";
+
+export type ProjectContextValue = {
+  currentProjectId: string;
+  currentProjectName: string;
+  projects: ProjectSummary[];
+  saveStatus: SaveStatus;
+  isHydrated: boolean;
+  hasUnsavedChanges: boolean;
+  saveProject: () => void;
+  createNewProject: (name: string) => void;
+  openProject: (projectId: string) => void;
+  renameCurrentProject: (name: string) => void;
+  renameProjectById: (projectId: string, name: string) => void;
+  duplicateProject: (projectId: string, name: string) => void;
+  deleteProject: (projectId: string) => void;
+  refreshProjects: () => void;
+};
+
+export const initialState: EditorState = {
   objects: [],
   selectedIds: [],
   transform: {
@@ -344,23 +377,336 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         },
       };
     }
+    case "replace-all":
+      return action.payload;
     default:
       return state;
   }
 }
 
 const EditorContext = createContext<{ state: EditorState; dispatch: Dispatch<EditorAction> } | null>(null);
+const ProjectContext = createContext<ProjectContextValue | null>(null);
+
+const defaultProjectName = () => `Project ${new Date().toLocaleDateString()}`;
+
+const toProjectRecord = (projectId: string, name: string, state: EditorState, createdAt: string): ProjectRecord => {
+  const now = new Date().toISOString();
+  return {
+    id: projectId,
+    name: name.trim() || "Untitled Project",
+    createdAt,
+    updatedAt: now,
+    version: PROJECT_SCHEMA_VERSION,
+    plot: {
+      width: state.plot.width,
+      height: state.plot.height,
+      gridSize: state.grid.size,
+    },
+    editor: {
+      zoom: state.transform.zoom,
+      panX: state.transform.panX,
+      panY: state.transform.panY,
+      snapEnabled: state.snap.enabled,
+      gridEnabled: state.grid.visible,
+    },
+    objects: state.objects,
+  };
+};
+
+const fromProjectRecord = (project: ProjectRecord): EditorState => ({
+  ...initialState,
+  objects: project.objects,
+  selectedIds: [],
+  transform: {
+    zoom: project.editor.zoom,
+    panX: project.editor.panX,
+    panY: project.editor.panY,
+  },
+  grid: {
+    visible: project.editor.gridEnabled,
+    size: project.plot.gridSize,
+  },
+  snap: {
+    enabled: project.editor.snapEnabled,
+  },
+  plot: {
+    width: project.plot.width,
+    height: project.plot.height,
+  },
+});
+
+const stateSignature = (state: EditorState) =>
+  JSON.stringify({
+    objects: state.objects,
+    plot: state.plot,
+    grid: state.grid,
+    snap: state.snap,
+    transform: state.transform,
+  });
 
 export function EditorProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(editorReducer, initialState);
-  const value = useMemo(() => ({ state, dispatch }), [state]);
-  return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState(`project-${crypto.randomUUID()}`);
+  const [currentProjectName, setCurrentProjectName] = useState(defaultProjectName);
+  const [projectCreatedAt, setProjectCreatedAt] = useState(new Date().toISOString());
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [lastSavedSignature, setLastSavedSignature] = useState(stateSignature(initialState));
+  const skipAutosaveRef = useRef(false);
+
+  const refreshProjects = useCallback(() => {
+    setProjects(localProjectStorage.listProjects());
+  }, []);
+
+  const markCurrentAsOpened = useCallback(
+    (projectId: string) => {
+      localProjectStorage.setLastOpenedProjectId(projectId);
+      setCurrentProjectId(projectId);
+    },
+    [setCurrentProjectId],
+  );
+
+  const persistCurrentProject = useCallback(() => {
+    const project = localProjectStorage.upsertProject(
+      toProjectRecord(currentProjectId, currentProjectName, state, projectCreatedAt),
+    );
+
+    setCurrentProjectName(project.name);
+    setProjectCreatedAt(project.createdAt);
+    setLastSavedSignature(stateSignature(state));
+    setSaveStatus("saved");
+    markCurrentAsOpened(project.id);
+    refreshProjects();
+  }, [currentProjectId, currentProjectName, markCurrentAsOpened, projectCreatedAt, refreshProjects, state]);
+
+  const saveProject = useCallback(() => {
+    setSaveStatus("saving");
+    persistCurrentProject();
+  }, [persistCurrentProject]);
+
+  const createNewProject = useCallback(
+    (name: string) => {
+      const now = new Date().toISOString();
+      const id = `project-${crypto.randomUUID()}`;
+      const nextName = name.trim() || "Untitled Project";
+
+      skipAutosaveRef.current = true;
+      dispatch({ type: "replace-all", payload: initialState });
+      setCurrentProjectName(nextName);
+      setProjectCreatedAt(now);
+      markCurrentAsOpened(id);
+      const emptySignature = stateSignature(initialState);
+      setLastSavedSignature(emptySignature);
+      setSaveStatus("saving");
+
+      const record = localProjectStorage.upsertProject(toProjectRecord(id, nextName, initialState, now));
+      setCurrentProjectName(record.name);
+      setProjectCreatedAt(record.createdAt);
+      setLastSavedSignature(emptySignature);
+      setSaveStatus("saved");
+      refreshProjects();
+    },
+    [markCurrentAsOpened, refreshProjects],
+  );
+
+  const openProject = useCallback(
+    (projectId: string) => {
+      const project = localProjectStorage.getProject(projectId);
+      if (!project) {
+        refreshProjects();
+        return;
+      }
+
+      const mapped = fromProjectRecord(project);
+      const signature = stateSignature(mapped);
+
+      skipAutosaveRef.current = true;
+      dispatch({ type: "replace-all", payload: mapped });
+      setCurrentProjectName(project.name);
+      setProjectCreatedAt(project.createdAt);
+      setLastSavedSignature(signature);
+      setSaveStatus("saved");
+      markCurrentAsOpened(project.id);
+      refreshProjects();
+    },
+    [markCurrentAsOpened, refreshProjects],
+  );
+
+  const renameProjectById = useCallback(
+    (projectId: string, name: string) => {
+      const updated = localProjectStorage.renameProject(projectId, name);
+      if (!updated) {
+        return;
+      }
+
+      if (updated.id === currentProjectId) {
+        setCurrentProjectName(updated.name);
+      }
+
+      refreshProjects();
+    },
+    [currentProjectId, refreshProjects],
+  );
+
+  const renameCurrentProject = useCallback(
+    (name: string) => {
+      renameProjectById(currentProjectId, name);
+      setSaveStatus("unsaved");
+    },
+    [currentProjectId, renameProjectById],
+  );
+
+  const duplicateProject = useCallback(
+    (projectId: string, name: string) => {
+      const duplicated = localProjectStorage.duplicateProject(projectId, name);
+      if (!duplicated) {
+        return;
+      }
+
+      refreshProjects();
+    },
+    [refreshProjects],
+  );
+
+  const deleteProject = useCallback(
+    (projectId: string) => {
+      localProjectStorage.deleteProject(projectId);
+      refreshProjects();
+
+      if (projectId === currentProjectId) {
+        const next = localProjectStorage.getLastOpenedProjectId();
+        if (next) {
+          openProject(next);
+          return;
+        }
+
+        createNewProject("Untitled Project");
+      }
+    },
+    [createNewProject, currentProjectId, openProject, refreshProjects],
+  );
+
+  useEffect(() => {
+    const savedProjects = localProjectStorage.listProjects();
+    setProjects(savedProjects);
+
+    const lastOpenedId = localProjectStorage.getLastOpenedProjectId();
+    const fallback = savedProjects[0]?.id;
+    const targetId = lastOpenedId || fallback;
+
+    if (targetId) {
+      const existing = localProjectStorage.getProject(targetId);
+      if (existing) {
+        const mapped = fromProjectRecord(existing);
+        const signature = stateSignature(mapped);
+        dispatch({ type: "replace-all", payload: mapped });
+        setCurrentProjectName(existing.name);
+        setCurrentProjectId(existing.id);
+        setProjectCreatedAt(existing.createdAt);
+        setLastSavedSignature(signature);
+        localProjectStorage.setLastOpenedProjectId(existing.id);
+        setSaveStatus("saved");
+        setIsHydrated(true);
+        return;
+      }
+    }
+
+    const now = new Date().toISOString();
+    const id = `project-${crypto.randomUUID()}`;
+    const record = localProjectStorage.upsertProject(toProjectRecord(id, "Untitled Project", initialState, now));
+    setCurrentProjectName(record.name);
+    setCurrentProjectId(record.id);
+    setProjectCreatedAt(record.createdAt);
+    setLastSavedSignature(stateSignature(initialState));
+    setSaveStatus("saved");
+    localProjectStorage.setLastOpenedProjectId(record.id);
+    setProjects(localProjectStorage.listProjects());
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    if (skipAutosaveRef.current) {
+      skipAutosaveRef.current = false;
+      return;
+    }
+
+    const signature = stateSignature(state);
+    if (signature === lastSavedSignature) {
+      return;
+    }
+
+    setSaveStatus("unsaved");
+
+    const timeout = window.setTimeout(() => {
+      setSaveStatus("saving");
+      persistCurrentProject();
+    }, 700);
+
+    return () => window.clearTimeout(timeout);
+  }, [isHydrated, lastSavedSignature, persistCurrentProject, state]);
+
+  const editorValue = useMemo(() => ({ state, dispatch }), [state]);
+  const hasUnsavedChanges = saveStatus !== "saved";
+
+  const projectValue = useMemo<ProjectContextValue>(
+    () => ({
+      currentProjectId,
+      currentProjectName,
+      projects,
+      saveStatus,
+      isHydrated,
+      hasUnsavedChanges,
+      saveProject,
+      createNewProject,
+      openProject,
+      renameCurrentProject,
+      renameProjectById,
+      duplicateProject,
+      deleteProject,
+      refreshProjects,
+    }),
+    [
+      createNewProject,
+      currentProjectId,
+      currentProjectName,
+      deleteProject,
+      duplicateProject,
+      hasUnsavedChanges,
+      isHydrated,
+      openProject,
+      projects,
+      refreshProjects,
+      renameCurrentProject,
+      renameProjectById,
+      saveProject,
+      saveStatus,
+    ],
+  );
+
+  return (
+    <EditorContext.Provider value={editorValue}>
+      <ProjectContext.Provider value={projectValue}>{children}</ProjectContext.Provider>
+    </EditorContext.Provider>
+  );
 }
 
 export function useEditor() {
   const context = useContext(EditorContext);
   if (!context) {
     throw new Error("useEditor must be used within EditorProvider");
+  }
+  return context;
+}
+
+export function useProjects() {
+  const context = useContext(ProjectContext);
+  if (!context) {
+    throw new Error("useProjects must be used within EditorProvider");
   }
   return context;
 }
