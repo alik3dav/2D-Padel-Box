@@ -1,6 +1,5 @@
 import { Plus } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type ElementCardProps = {
@@ -10,18 +9,20 @@ type ElementCardProps = {
 
 export function ElementCard({ name, icon }: ElementCardProps) {
   return (
-    <Card
+    <button
+      type="button"
       className={cn(
-        "group cursor-pointer border-border/65 bg-card/45 p-2.5 transition-all duration-150 hover:border-primary/45 hover:bg-accent/40",
+        "group flex w-full items-start gap-2 rounded-lg bg-transparent px-2 py-2 text-left transition duration-150",
+        "hover:bg-white/[0.04] hover:brightness-110 active:bg-white/[0.06]",
       )}
     >
-      <div className="mb-1.5 flex items-center justify-between text-muted-foreground transition-colors group-hover:text-primary">
-        <span className="flex items-center justify-center rounded-md border border-border/60 bg-muted/45 p-1.5">
-          {icon}
-        </span>
-        <Plus className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+      <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.03] text-muted-foreground transition-colors group-hover:text-foreground/90">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 text-[11px] font-medium leading-snug text-foreground/90">{name}</p>
       </div>
-      <p className="line-clamp-2 text-[11px] font-medium leading-snug text-foreground/95">{name}</p>
-    </Card>
+      <Plus className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/70 opacity-0 transition-opacity group-hover:opacity-100" />
+    </button>
   );
 }

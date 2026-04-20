@@ -6,7 +6,7 @@ import { Workspace } from "@/components/editor/workspace";
 
 export function EditorShell() {
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#090d13] text-foreground">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#0b1119] text-foreground">
       <Toolbar />
       <div className="flex min-h-0 flex-1">
         <Sidebar />
