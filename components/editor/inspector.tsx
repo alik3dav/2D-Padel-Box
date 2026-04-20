@@ -1,16 +1,23 @@
 "use client";
 
 import { InspectorEmpty } from "@/components/editor/inspector-empty";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useEditor } from "@/components/editor/editor-context";
+import type { EditorObject } from "@/lib/editor-types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const sections = ["Position", "Size", "Appearance", "Rotation", "Layer", "Lock"];
 
 export function Inspector() {
+  const { state, dispatch } = useEditor();
+  const selected = state.objects.find((item) => item.id === state.selectedId) ?? null;
+
+  const updateSelected = (patch: Partial<EditorObject>) => {
+    if (!selected) {
+      return;
+    }
+    dispatch({ type: "update-object", payload: { id: selected.id, patch } });
+  };
+
   return (
     <aside className="flex h-full w-72 flex-col bg-[#0d141d] px-4 py-3.5 shadow-[inset_1px_0_0_rgba(255,255,255,0.03)]">
       <div className="mb-4">
@@ -19,7 +26,56 @@ export function Inspector() {
       </div>
 
       <div className="space-y-5 overflow-y-auto pr-0.5">
-        <InspectorEmpty />
+        {!selected ? (
+          <InspectorEmpty />
+        ) : (
+          <section className="space-y-3 rounded-lg bg-[#101923] p-3">
+            <h3 className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/62">Selection</h3>
+            <p className="text-xs font-medium text-foreground/88">{selected.label}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground/72">X</Label>
+                <Input
+                  value={selected.x}
+                  type="number"
+                  step={0.1}
+                  onChange={(event) => updateSelected({ x: Number(event.target.value) })}
+                  className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground/72">Y</Label>
+                <Input
+                  value={selected.y}
+                  type="number"
+                  step={0.1}
+                  onChange={(event) => updateSelected({ y: Number(event.target.value) })}
+                  className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground/72">Width</Label>
+                <Input
+                  value={selected.width}
+                  type="number"
+                  step={0.1}
+                  onChange={(event) => updateSelected({ width: Number(event.target.value) })}
+                  className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground/72">Height</Label>
+                <Input
+                  value={selected.height}
+                  type="number"
+                  step={0.1}
+                  onChange={(event) => updateSelected({ height: Number(event.target.value) })}
+                  className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1"
+                />
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="space-y-3">
           <h3 className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/62">Plot Setup</h3>
@@ -30,7 +86,10 @@ export function Inspector() {
               </Label>
               <Input
                 id="plot-width"
-                defaultValue="40"
+                value={state.plot.width}
+                type="number"
+                step={1}
+                onChange={(event) => dispatch({ type: "set-plot", payload: { width: Number(event.target.value) } })}
                 className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1"
               />
             </div>
@@ -40,7 +99,23 @@ export function Inspector() {
               </Label>
               <Input
                 id="plot-height"
-                defaultValue="25"
+                value={state.plot.height}
+                type="number"
+                step={1}
+                onChange={(event) => dispatch({ type: "set-plot", payload: { height: Number(event.target.value) } })}
+                className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="grid-size" className="text-[11px] text-muted-foreground/72">
+                Grid Size (meters)
+              </Label>
+              <Input
+                id="grid-size"
+                value={state.grid.size}
+                type="number"
+                step={0.5}
+                onChange={(event) => dispatch({ type: "set-grid-size", payload: { size: Number(event.target.value) } })}
                 className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1"
               />
             </div>
@@ -48,46 +123,6 @@ export function Inspector() {
         </section>
 
         <Separator className="bg-white/6" />
-
-        <section className="space-y-3">
-          <h3 className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/62">Properties</h3>
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid h-8 w-full grid-cols-2 bg-white/[0.035] p-0.5">
-              <TabsTrigger value="basic" className="text-xs">
-                Basic
-              </TabsTrigger>
-              <TabsTrigger value="advanced" className="text-xs">
-                Advanced
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="basic" className="mt-2">
-              <Accordion type="single" collapsible defaultValue="Position" className="w-full">
-                {sections.map((section) => (
-                  <AccordionItem value={section} key={section} className="border-white/6">
-                    <AccordionTrigger className="py-2 text-xs text-foreground/88">{section}</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <Input placeholder="X" className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1" />
-                          <Input placeholder="Y" className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1" />
-                        </div>
-                        <div className="flex items-center justify-between rounded-md bg-[#101923] px-2.5 py-1.5">
-                          <Label className="text-[11px] text-muted-foreground/72">Enabled</Label>
-                          <Switch />
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </TabsContent>
-            <TabsContent value="advanced" className="mt-2">
-              <div className="rounded-md bg-[#101923] p-3 text-xs text-muted-foreground/76">
-                Advanced controls will appear in Phase 2.
-              </div>
-            </TabsContent>
-          </Tabs>
-        </section>
       </div>
     </aside>
   );

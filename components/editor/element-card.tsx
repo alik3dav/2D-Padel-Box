@@ -1,16 +1,26 @@
+"use client";
+
+import { type ReactNode } from "react";
+
 import { Plus } from "lucide-react";
 
+import { useEditor } from "@/components/editor/editor-context";
+import type { EditorObjectType } from "@/lib/editor-types";
 import { cn } from "@/lib/utils";
 
 type ElementCardProps = {
   name: string;
-  icon: React.ReactNode;
+  type: EditorObjectType;
+  icon: ReactNode;
 };
 
-export function ElementCard({ name, icon }: ElementCardProps) {
+export function ElementCard({ name, type, icon }: ElementCardProps) {
+  const { dispatch } = useEditor();
+
   return (
     <button
       type="button"
+      onClick={() => dispatch({ type: "add-object", payload: { type } })}
       className={cn(
         "group flex w-full items-start gap-2 rounded-lg bg-transparent px-2 py-1.5 text-left transition duration-150",
         "hover:bg-white/[0.045] active:bg-primary/12",

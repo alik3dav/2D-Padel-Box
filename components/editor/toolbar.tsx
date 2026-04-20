@@ -1,45 +1,38 @@
 "use client";
 
-import {
-  Grid3X3,
-  Maximize,
-  Minus,
-  MousePointer2,
-  Plus,
-  Redo2,
-  Magnet,
-  Undo2,
-} from "lucide-react";
+import { type ReactNode } from "react";
 
+import { Grid3X3, Maximize, Minus, MousePointer2, Plus, Redo2, Magnet, Undo2 } from "lucide-react";
+
+import { useEditor } from "@/components/editor/editor-context";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 function ToolbarIconButton({
   icon,
   label,
+  active,
+  onClick,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
+  active?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
+          type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-md text-muted-foreground/85 hover:bg-white/[0.05] hover:text-foreground/95"
+          onClick={onClick}
+          className={cn(
+            "h-8 w-8 rounded-md text-muted-foreground/85 hover:bg-white/[0.05] hover:text-foreground/95",
+            active && "bg-primary/20 text-primary hover:bg-primary/25",
+          )}
         >
           {icon}
         </Button>
@@ -50,6 +43,8 @@ function ToolbarIconButton({
 }
 
 export function Toolbar() {
+  const { state, dispatch } = useEditor();
+
   return (
     <header className="flex h-12 items-center justify-between bg-[#0d141d]/92 px-4 shadow-[inset_0_-1px_0_rgba(255,255,255,0.04)] backdrop-blur-md">
       <div className="flex items-center gap-3">
@@ -62,45 +57,40 @@ export function Toolbar() {
             <p className="text-xs font-medium tracking-tight text-foreground/90">Padel Club Layout v1</p>
           </div>
         </div>
-
-        <Separator orientation="vertical" className="h-6 bg-white/8" />
-
-        <div className="flex items-center gap-1.5 p-0.5">
-          {[
-            { name: "File", actions: ["New", "Save", "Load", "Export"] },
-            { name: "Edit", actions: ["Undo", "Redo"] },
-            { name: "View", actions: ["Show Grid", "Show Rulers", "Reset Zoom"] },
-          ].map((menu) => (
-            <DropdownMenu key={menu.name}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 rounded-md px-2.5 text-xs font-medium text-muted-foreground/82 hover:bg-white/[0.05] hover:text-foreground/92"
-                >
-                  {menu.name}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {menu.actions.map((action) => (
-                  <DropdownMenuItem key={action}>{action}</DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ))}
-        </div>
       </div>
 
       <TooltipProvider delayDuration={120}>
         <div className="flex items-center gap-1 rounded-lg bg-white/[0.03] p-1">
-          <ToolbarIconButton icon={<Undo2 className="h-4 w-4" />} label="Undo" />
-          <ToolbarIconButton icon={<Redo2 className="h-4 w-4" />} label="Redo" />
+          <ToolbarIconButton icon={<Undo2 className="h-4 w-4" />} label="Undo (phase 3)" />
+          <ToolbarIconButton icon={<Redo2 className="h-4 w-4" />} label="Redo (phase 3)" />
           <Separator orientation="vertical" className="mx-1 h-5 bg-white/8" />
-          <ToolbarIconButton icon={<Plus className="h-4 w-4" />} label="Zoom in" />
-          <ToolbarIconButton icon={<Minus className="h-4 w-4" />} label="Zoom out" />
-          <ToolbarIconButton icon={<Maximize className="h-4 w-4" />} label="Fit to screen" />
-          <ToolbarIconButton icon={<Grid3X3 className="h-4 w-4" />} label="Grid toggle" />
-          <ToolbarIconButton icon={<Magnet className="h-4 w-4" />} label="Snap toggle" />
+          <ToolbarIconButton
+            icon={<Plus className="h-4 w-4" />}
+            label="Zoom in"
+            onClick={() => dispatch({ type: "set-transform", payload: { zoom: state.transform.zoom * 1.1 } })}
+          />
+          <ToolbarIconButton
+            icon={<Minus className="h-4 w-4" />}
+            label="Zoom out"
+            onClick={() => dispatch({ type: "set-transform", payload: { zoom: state.transform.zoom * 0.9 } })}
+          />
+          <ToolbarIconButton
+            icon={<Maximize className="h-4 w-4" />}
+            label="Reset zoom"
+            onClick={() => dispatch({ type: "set-transform", payload: { zoom: 1 } })}
+          />
+          <ToolbarIconButton
+            icon={<Grid3X3 className="h-4 w-4" />}
+            label="Grid toggle"
+            active={state.grid.visible}
+            onClick={() => dispatch({ type: "toggle-grid" })}
+          />
+          <ToolbarIconButton
+            icon={<Magnet className="h-4 w-4" />}
+            label="Snap toggle"
+            active={state.snap.enabled}
+            onClick={() => dispatch({ type: "toggle-snap" })}
+          />
         </div>
       </TooltipProvider>
     </header>

@@ -1,3 +1,7 @@
+"use client";
+
+import { type ReactNode } from "react";
+
 import {
   Armchair,
   Building2,
@@ -18,48 +22,60 @@ import {
 } from "lucide-react";
 
 import { SidebarGroup } from "@/components/editor/sidebar-group";
+import type { EditorObjectType } from "@/lib/editor-types";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const groups = [
+export type SidebarElementItem = {
+  name: string;
+  type: EditorObjectType;
+  icon: ReactNode;
+};
+
+type SidebarGroupConfig = {
+  title: string;
+  items: SidebarElementItem[];
+};
+
+const groups: SidebarGroupConfig[] = [
   {
     title: "Courts",
     items: [
-      { name: "Padel Court", icon: <Square className="h-4 w-4" /> },
-      { name: "Single Court", icon: <SquareDashedBottomCode className="h-4 w-4" /> },
+      { name: "Padel Court", type: "padel-court", icon: <Square className="h-4 w-4" /> },
+      { name: "Single Court", type: "single-court", icon: <SquareDashedBottomCode className="h-4 w-4" /> },
     ],
   },
   {
     title: "Structures",
     items: [
-      { name: "Wall", icon: <Fence className="h-4 w-4" /> },
-      { name: "Glass Wall", icon: <Glasses className="h-4 w-4" /> },
-      { name: "Door", icon: <DoorOpen className="h-4 w-4" /> },
-      { name: "Column", icon: <Columns2 className="h-4 w-4" /> },
-      { name: "Stairs", icon: <Landmark className="h-4 w-4" /> },
+      { name: "Wall", type: "wall", icon: <Fence className="h-4 w-4" /> },
+      { name: "Glass Wall", type: "glass-wall", icon: <Glasses className="h-4 w-4" /> },
+      { name: "Door", type: "door", icon: <DoorOpen className="h-4 w-4" /> },
+      { name: "Column", type: "column", icon: <Columns2 className="h-4 w-4" /> },
+      { name: "Stairs", type: "stairs", icon: <Landmark className="h-4 w-4" /> },
     ],
   },
   {
     title: "Furniture",
     items: [
-      { name: "Reception", icon: <Building2 className="h-4 w-4" /> },
-      { name: "Lounge", icon: <Armchair className="h-4 w-4" /> },
-      { name: "Lockers", icon: <Warehouse className="h-4 w-4" /> },
-      { name: "Storage", icon: <Warehouse className="h-4 w-4" /> },
+      { name: "Reception", type: "reception", icon: <Building2 className="h-4 w-4" /> },
+      { name: "Lounge", type: "lounge", icon: <Armchair className="h-4 w-4" /> },
+      { name: "Lockers", type: "lockers", icon: <Warehouse className="h-4 w-4" /> },
+      { name: "Storage", type: "storage", icon: <Warehouse className="h-4 w-4" /> },
     ],
   },
   {
     title: "Amenities",
     items: [
-      { name: "Café / Bar", icon: <Store className="h-4 w-4" /> },
-      { name: "Toilets", icon: <Waves className="h-4 w-4" /> },
-      { name: "Parking", icon: <ParkingSquare className="h-4 w-4" /> },
-      { name: "Custom Zone", icon: <Dumbbell className="h-4 w-4" /> },
+      { name: "Café / Bar", type: "cafe", icon: <Store className="h-4 w-4" /> },
+      { name: "Toilets", type: "toilets", icon: <Waves className="h-4 w-4" /> },
+      { name: "Parking", type: "parking", icon: <ParkingSquare className="h-4 w-4" /> },
+      { name: "Custom Zone", type: "custom-zone", icon: <Dumbbell className="h-4 w-4" /> },
     ],
   },
   {
     title: "Labels",
-    items: [{ name: "Text Label", icon: <Type className="h-4 w-4" /> }],
+    items: [{ name: "Text Label", type: "text-label", icon: <Type className="h-4 w-4" /> }],
   },
 ];
 
