@@ -92,7 +92,7 @@ function ObjectLayerImpl({
             onPointerDown={(event) => onObjectPointerDown(event, item)}
             data-export-selection={selected ? "true" : undefined}
             className={cn(
-              "absolute flex cursor-grab select-none items-center justify-center overflow-hidden rounded-[6px] border text-[10px] font-medium text-white/90 shadow-[0_2px_16px_rgba(0,0,0,0.16)]",
+              "absolute flex cursor-grab select-none items-center justify-center rounded-[2px] border text-[12px] font-medium text-white/90 shadow-[0_2px_16px_rgba(0,0,0,0.26)]",
               getObjectClassName(item.type),
               selected && "ring-1 ring-primary/80 ring-offset-1 ring-offset-[#0e1620]",
               item.locked && "cursor-not-allowed opacity-60",
