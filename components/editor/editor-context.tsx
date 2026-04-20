@@ -183,6 +183,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
           },
           state.plot.width,
           state.plot.height,
+          item.rotation,
         );
 
         return { ...item, x: rect.x, y: rect.y };
@@ -212,6 +213,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
             },
             state.plot.width,
             state.plot.height,
+            action.payload.patch.rotation ?? item.rotation,
           );
 
           return {
@@ -244,6 +246,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
           },
           state.plot.width,
           state.plot.height,
+          patch.rotation ?? item.rotation,
         );
 
         return {
@@ -298,6 +301,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
           },
           state.plot.width,
           state.plot.height,
+          item.rotation,
         );
 
         return {
