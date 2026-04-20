@@ -36,7 +36,11 @@ function ToolbarIconButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-md border border-transparent text-muted-foreground/90 hover:border-border/70 hover:bg-muted/40 hover:text-foreground"
+        >
           {icon}
         </Button>
       </TooltipTrigger>
@@ -47,28 +51,33 @@ function ToolbarIconButton({
 
 export function Toolbar() {
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border/80 bg-card/50 px-4">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <div className="rounded-md bg-primary/20 p-1.5 text-primary">
+    <header className="flex h-12 items-center justify-between border-b border-border/70 bg-[#0b1018]/95 px-3 backdrop-blur">
+      <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-card/45 px-2.5 py-1.5">
+          <div className="rounded-md border border-primary/20 bg-primary/15 p-1.5 text-primary">
             <MousePointer2 className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Project</p>
-            <p className="text-sm font-semibold">Padel Club Layout v1</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/80">Project</p>
+            <p className="text-xs font-semibold tracking-tight text-foreground/95">Padel Club Layout v1</p>
           </div>
         </div>
 
-        <Separator orientation="vertical" className="h-7" />
+        <Separator orientation="vertical" className="h-6 bg-border/60" />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 rounded-md border border-border/60 bg-card/35 p-1">
           {[
             { name: "File", actions: ["New", "Save", "Load", "Export"] },
             { name: "Edit", actions: ["Undo", "Redo"] },
+            { name: "View", actions: ["Show Grid", "Show Rulers", "Reset Zoom"] },
           ].map((menu) => (
             <DropdownMenu key={menu.name}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 px-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/45 hover:text-foreground"
+                >
                   {menu.name}
                 </Button>
               </DropdownMenuTrigger>
@@ -83,10 +92,10 @@ export function Toolbar() {
       </div>
 
       <TooltipProvider delayDuration={120}>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-card/35 p-1">
           <ToolbarIconButton icon={<Undo2 className="h-4 w-4" />} label="Undo" />
           <ToolbarIconButton icon={<Redo2 className="h-4 w-4" />} label="Redo" />
-          <Separator orientation="vertical" className="mx-1 h-7" />
+          <Separator orientation="vertical" className="mx-0.5 h-5 bg-border/60" />
           <ToolbarIconButton icon={<Plus className="h-4 w-4" />} label="Zoom in" />
           <ToolbarIconButton icon={<Minus className="h-4 w-4" />} label="Zoom out" />
           <ToolbarIconButton icon={<Maximize className="h-4 w-4" />} label="Fit to screen" />

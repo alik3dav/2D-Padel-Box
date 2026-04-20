@@ -65,16 +65,19 @@ const groups = [
 
 export function Sidebar() {
   return (
-    <aside className="flex h-full w-80 flex-col border-r border-border/80 bg-card/40">
-      <div className="space-y-3 border-b border-border/70 px-4 py-3">
-        <h2 className="text-sm font-semibold">Element Library</h2>
+    <aside className="flex h-full w-72 flex-col border-r border-border/70 bg-[#0c121b]/70">
+      <div className="space-y-2.5 border-b border-border/60 px-3.5 py-3">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/90">Element Library</h2>
         <div className="relative">
-          <ScanSearch className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search elements..." className="pl-9" />
+          <ScanSearch className="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search elements..."
+            className="h-8 border-border/70 bg-background/30 pl-8 text-xs placeholder:text-muted-foreground/80"
+          />
         </div>
       </div>
       <ScrollArea className="h-full">
-        <div className="space-y-6 p-4">
+        <div className="space-y-5 p-3.5">
           {groups.map((group) => (
             <SidebarGroup key={group.title} title={group.title} items={group.items} />
           ))}
