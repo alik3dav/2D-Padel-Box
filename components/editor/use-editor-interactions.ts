@@ -158,39 +158,47 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
       }
 
       if (dragRef.current) {
-        const lead = state.objects.find((item) => item.id === dragRef.current?.leadId);
+        const dragSession = dragRef.current;
+        const lead = state.objects.find((item) => item.id === dragSession.leadId);
         if (!lead || lead.locked) {
           return;
         }
 
-        const deltaX = (event.clientX - dragRef.current.startPointerX) / (state.transform.zoom * unitSize);
-        const deltaY = (event.clientY - dragRef.current.startPointerY) / (state.transform.zoom * unitSize);
+        const deltaX = (event.clientX - dragSession.startPointerX) / (state.transform.zoom * unitSize);
+        const deltaY = (event.clientY - dragSession.startPointerY) / (state.transform.zoom * unitSize);
 
-        let nextLeadX = dragRef.current.startPositions.get(lead.id)?.x ?? lead.x;
-        let nextLeadY = dragRef.current.startPositions.get(lead.id)?.y ?? lead.y;
+        let nextLeadX = dragSession.startPositions.get(lead.id)?.x ?? lead.x;
+        let nextLeadY = dragSession.startPositions.get(lead.id)?.y ?? lead.y;
         nextLeadX += deltaX;
         nextLeadY += deltaY;
 
         const snapResult = snapRect(
           { x: nextLeadX, y: nextLeadY, width: lead.width, height: lead.height },
           state.objects,
-          new Set(dragRef.current.ids),
+          new Set(dragSession.ids),
           state.grid.size,
           state.snap.enabled,
           state.plot.width,
           state.plot.height,
         );
 
-        const finalDeltaX = snapResult.rect.x - (dragRef.current.startPositions.get(lead.id)?.x ?? lead.x);
-        const finalDeltaY = snapResult.rect.y - (dragRef.current.startPositions.get(lead.id)?.y ?? lead.y);
+        const finalDeltaX = snapResult.rect.x - (dragSession.startPositions.get(lead.id)?.x ?? lead.x);
+        const finalDeltaY = snapResult.rect.y - (dragSession.startPositions.get(lead.id)?.y ?? lead.y);
 
         dispatch({ type: "set-guides", payload: { guides: snapResult.guides } });
         dispatch({
-          type: "move-selection",
+          type: "update-many",
           payload: {
-            ids: dragRef.current.ids,
-            deltaX: finalDeltaX,
-            deltaY: finalDeltaY,
+            patches: dragSession.ids.map((id) => {
+              const startPosition = dragSession.startPositions.get(id) ?? { x: 0, y: 0 };
+              return {
+                id,
+                patch: {
+                  x: startPosition.x + finalDeltaX,
+                  y: startPosition.y + finalDeltaY,
+                },
+              };
+            }),
           },
         });
       }
