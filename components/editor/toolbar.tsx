@@ -2,7 +2,7 @@
 
 import { type ReactNode, useState } from "react";
 
-import { FolderOpen, Grid3X3, Maximize, Minus, MousePointer2, Plus, Redo2, Magnet, Save, Undo2 } from "lucide-react";
+import { FolderOpen, Grid3X3, Maximize, Minus, MousePointer2, Plus, Redo2, Magnet, Save, Undo2, Download } from "lucide-react";
 
 import { ProjectManagerDialog } from "@/components/editor/project-manager-dialog";
 import { useEditor, useProjects } from "@/components/editor/editor-context";
@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { exportProject } from "@/lib/export/export-service";
 import { cn } from "@/lib/utils";
 
 function ToolbarIconButton({
@@ -53,7 +55,15 @@ const saveText: Record<ReturnType<typeof useProjects>["saveStatus"], string> = {
 
 export function Toolbar() {
   const { state, dispatch } = useEditor();
-  const { currentProjectName, hasUnsavedChanges, createNewProject, renameCurrentProject, saveProject, saveStatus } = useProjects();
+  const {
+    currentProjectName,
+    hasUnsavedChanges,
+    createNewProject,
+    renameCurrentProject,
+    saveProject,
+    saveStatus,
+    buildCurrentProjectRecord,
+  } = useProjects();
 
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
@@ -61,6 +71,20 @@ export function Toolbar() {
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [renameValue, setRenameValue] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async (format: "png" | "pdf" | "json", pdfOrientation?: "portrait" | "landscape") => {
+    try {
+      setIsExporting(true);
+      const project = buildCurrentProjectRecord();
+      await exportProject({ format, project, pdfOrientation });
+    } catch (error) {
+      console.error(error);
+      window.alert("Export failed. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const requestNewProject = () => {
     if (hasUnsavedChanges) {
@@ -102,6 +126,19 @@ export function Toolbar() {
             <Button size="sm" className="h-8 text-xs" onClick={saveProject}>
               <Save className="h-4 w-4" /> Save
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="secondary" className="h-8 text-xs" disabled={isExporting}>
+                  <Download className="h-4 w-4" /> {isExporting ? "Exporting..." : "Export"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuItem onClick={() => handleExport("png")}>Export PNG</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("pdf", "landscape")}>Export PDF (Landscape)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("pdf", "portrait")}>Export PDF (Portrait)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("json")}>Export JSON</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
