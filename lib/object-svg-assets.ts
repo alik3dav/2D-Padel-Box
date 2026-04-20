@@ -11,7 +11,7 @@ const cssUrl = (value: string) => `url("${value}")`;
  * 4) Save and refresh the editor.
  */
 export const objectSvgBackgrounds: Partial<Record<EditorObject["type"], string>> = {
-  "padel-court": cssUrl("https://cxkxdsbfhfoaxgiwkyez.supabase.co/storage/v1/object/public/svgtest/20x10.svg"),
-  "single-court": cssUrl("https://cxkxdsbfhfoaxgiwkyez.supabase.co/storage/v1/object/public/svgtest/20x10.svg"),
+  "padel-court": cssUrl("https://cxkxdsbfhfoaxgiwkyez.supabase.co/storage/v1/object/public/svgtest/20x10%20(1).svg"),
+  "single-court": cssUrl("https://cxkxdsbfhfoaxgiwkyez.supabase.co/storage/v1/object/public/svgtest/20x10%20(1).svg"),
   wall: cssUrl("https://example.com/assets/wall.svg"),
 };
