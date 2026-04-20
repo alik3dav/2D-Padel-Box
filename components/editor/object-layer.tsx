@@ -49,10 +49,18 @@ function getObjectVisualStyle(type: EditorObject["type"]): CSSProperties {
 
   return {
     backgroundImage,
-    backgroundSize: "100% 100%",
+    backgroundSize: "cover",
     backgroundRepeat: "no-repeat",
     backgroundPosition: "center",
   };
+}
+
+function getObjectClassName(type: EditorObject["type"]) {
+  if (objectSvgBackgrounds[type]) {
+    return "bg-transparent";
+  }
+
+  return objectStyles[type];
 }
 
 function formatDimension(value: number) {
@@ -85,7 +93,7 @@ function ObjectLayerImpl({
             data-export-selection={selected ? "true" : undefined}
             className={cn(
               "absolute flex cursor-grab select-none items-center justify-center overflow-hidden rounded-[6px] border text-[10px] font-medium text-white/90 shadow-[0_2px_16px_rgba(0,0,0,0.16)]",
-              objectStyles[item.type],
+              getObjectClassName(item.type),
               selected && "ring-1 ring-primary/80 ring-offset-1 ring-offset-[#0e1620]",
               item.locked && "cursor-not-allowed opacity-60",
             )}
