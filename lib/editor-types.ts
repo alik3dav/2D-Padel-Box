@@ -24,6 +24,7 @@ export type EditorObject = {
   width: number;
   height: number;
   rotation: number;
+  zIndex: number;
   label?: string;
   locked: boolean;
 };
@@ -53,14 +54,32 @@ export type PlotSettings = {
   height: number;
 };
 
+export type AlignmentGuide = {
+  id: string;
+  axis: "x" | "y";
+  position: number;
+  start: number;
+  end: number;
+};
+
+export type EditorSnapshot = {
+  objects: EditorObject[];
+  selectedIds: string[];
+};
+
 export type EditorState = {
   objects: EditorObject[];
-  selectedId: string | null;
+  selectedIds: string[];
   transform: CanvasTransform;
   grid: GridSettings;
   snap: SnapSettings;
   cursor: CursorPosition;
   plot: PlotSettings;
+  guides: AlignmentGuide[];
+  history: {
+    past: EditorSnapshot[];
+    future: EditorSnapshot[];
+  };
 };
 
 export type ObjectPreset = {

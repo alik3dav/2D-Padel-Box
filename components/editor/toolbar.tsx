@@ -61,8 +61,16 @@ export function Toolbar() {
 
       <TooltipProvider delayDuration={120}>
         <div className="flex items-center gap-1 rounded-lg bg-white/[0.03] p-1">
-          <ToolbarIconButton icon={<Undo2 className="h-4 w-4" />} label="Undo (phase 3)" />
-          <ToolbarIconButton icon={<Redo2 className="h-4 w-4" />} label="Redo (phase 3)" />
+          <ToolbarIconButton
+            icon={<Undo2 className="h-4 w-4" />}
+            label="Undo"
+            onClick={() => dispatch({ type: "undo" })}
+          />
+          <ToolbarIconButton
+            icon={<Redo2 className="h-4 w-4" />}
+            label="Redo"
+            onClick={() => dispatch({ type: "redo" })}
+          />
           <Separator orientation="vertical" className="mx-1 h-5 bg-white/8" />
           <ToolbarIconButton
             icon={<Plus className="h-4 w-4" />}

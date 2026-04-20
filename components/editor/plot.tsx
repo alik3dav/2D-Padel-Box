@@ -12,10 +12,11 @@ export function Plot() {
   const { state, dispatch } = useEditor();
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  const { onObjectPointerDown, onPointerMove, onViewportPointerDown, onWheel, isPanning } = useEditorInteractions({
-    viewportRef,
-    unitSize: UNIT_SIZE,
-  });
+  const { onObjectPointerDown, onPointerMove, onViewportPointerDown, onWheel, isPanning, onResizeHandlePointerDown } =
+    useEditorInteractions({
+      viewportRef,
+      unitSize: UNIT_SIZE,
+    });
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -59,9 +60,7 @@ export function Plot() {
         onPointerDown={onViewportPointerDown}
         onPointerMove={onPointerMove}
       >
-        <div
-          className="absolute left-3.5 top-3 rounded-md bg-black/12 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground/52"
-        >
+        <div className="absolute left-3.5 top-3 rounded-md bg-black/12 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground/52">
           Plot
         </div>
 
@@ -85,15 +84,40 @@ export function Plot() {
           >
             <ObjectLayer
               objects={state.objects}
-              selectedId={state.selectedId}
+              selectedIds={state.selectedIds}
               unitSize={UNIT_SIZE}
               onObjectPointerDown={onObjectPointerDown}
+              onResizeHandlePointerDown={onResizeHandlePointerDown}
             />
+
+            {state.guides.map((guide) =>
+              guide.axis === "x" ? (
+                <div
+                  key={guide.id}
+                  className="pointer-events-none absolute w-px bg-cyan-300/80"
+                  style={{
+                    left: guide.position * UNIT_SIZE,
+                    top: guide.start * UNIT_SIZE,
+                    height: Math.max(1, (guide.end - guide.start) * UNIT_SIZE),
+                  }}
+                />
+              ) : (
+                <div
+                  key={guide.id}
+                  className="pointer-events-none absolute h-px bg-cyan-300/80"
+                  style={{
+                    left: guide.start * UNIT_SIZE,
+                    top: guide.position * UNIT_SIZE,
+                    width: Math.max(1, (guide.end - guide.start) * UNIT_SIZE),
+                  }}
+                />
+              ),
+            )}
           </div>
         </div>
 
         <div className="pointer-events-none absolute bottom-3 left-3 rounded bg-black/20 px-2 py-1 text-[10px] text-muted-foreground/70">
-          {isPanning ? "Panning" : "Select & Drag"}
+          {isPanning ? "Panning" : "Select / Multi-select / Resize"}
         </div>
       </div>
     </div>

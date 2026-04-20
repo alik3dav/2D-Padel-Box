@@ -4,11 +4,14 @@ import { OBJECT_LABELS } from "@/lib/editor-catalog";
 import type { EditorObject } from "@/lib/editor-types";
 import { cn } from "@/lib/utils";
 
+type ResizeHandle = "nw" | "ne" | "sw" | "se";
+
 type ObjectLayerProps = {
   objects: EditorObject[];
-  selectedId: string | null;
+  selectedIds: string[];
   unitSize: number;
   onObjectPointerDown: (event: PointerEvent<HTMLDivElement>, object: EditorObject) => void;
+  onResizeHandlePointerDown: (event: PointerEvent<HTMLButtonElement>, object: EditorObject, handle: ResizeHandle) => void;
 };
 
 const objectStyles: Record<string, string> = {
@@ -30,11 +33,30 @@ const objectStyles: Record<string, string> = {
   "text-label": "bg-transparent border-dashed border-white/25",
 };
 
-function ObjectLayerImpl({ objects, selectedId, unitSize, onObjectPointerDown }: ObjectLayerProps) {
+const handles: Array<{ handle: ResizeHandle; className: string }> = [
+  { handle: "nw", className: "-left-1 -top-1 cursor-nwse-resize" },
+  { handle: "ne", className: "-right-1 -top-1 cursor-nesw-resize" },
+  { handle: "sw", className: "-bottom-1 -left-1 cursor-nesw-resize" },
+  { handle: "se", className: "-bottom-1 -right-1 cursor-nwse-resize" },
+];
+
+function ObjectLayerImpl({
+  objects,
+  selectedIds,
+  unitSize,
+  onObjectPointerDown,
+  onResizeHandlePointerDown,
+}: ObjectLayerProps) {
+  const selectedSet = new Set(selectedIds);
+  const sorted = [...objects].sort((a, b) => a.zIndex - b.zIndex);
+  const singleSelection = selectedIds.length === 1 ? selectedIds[0] : null;
+
   return (
     <>
-      {objects.map((item) => {
-        const selected = selectedId === item.id;
+      {sorted.map((item) => {
+        const selected = selectedSet.has(item.id);
+        const showHandles = singleSelection === item.id;
+
         return (
           <div
             key={item.id}
@@ -53,11 +75,25 @@ function ObjectLayerImpl({ objects, selectedId, unitSize, onObjectPointerDown }:
               width: Math.max(8, item.width * unitSize),
               height: Math.max(8, item.height * unitSize),
               transform: `rotate(${item.rotation}deg)`,
+              zIndex: item.zIndex,
             }}
           >
             <span className="pointer-events-none px-1 text-center leading-tight text-[10px] text-foreground/90">
               {item.label ?? OBJECT_LABELS[item.type]}
             </span>
+
+            {showHandles &&
+              handles.map((entry) => (
+                <button
+                  key={entry.handle}
+                  type="button"
+                  className={cn(
+                    "absolute h-2.5 w-2.5 rounded-full border border-white/70 bg-[#1b2a39] shadow-sm",
+                    entry.className,
+                  )}
+                  onPointerDown={(event) => onResizeHandlePointerDown(event, item, entry.handle)}
+                />
+              ))}
           </div>
         );
       })}

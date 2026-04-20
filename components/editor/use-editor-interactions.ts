@@ -3,6 +3,7 @@
 import { type PointerEvent, type RefObject, type WheelEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { useEditor } from "@/components/editor/editor-context";
+import { roundToGrid, snapRect, type Rect } from "@/lib/editor-geometry";
 import type { EditorObject } from "@/lib/editor-types";
 
 type UseEditorInteractionsArgs = {
@@ -10,8 +11,13 @@ type UseEditorInteractionsArgs = {
   unitSize: number;
 };
 
-function roundToGrid(value: number, gridSize: number) {
-  return Math.round(value / gridSize) * gridSize;
+type ResizeHandle = "nw" | "ne" | "sw" | "se";
+
+const MIN_SIZE = 0.5;
+
+function focusedOnFormField() {
+  const target = document.activeElement;
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
 }
 
 export function useEditorInteractions({ viewportRef, unitSize }: UseEditorInteractionsArgs) {
@@ -21,11 +27,22 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
 
   const dragRef = useRef<
     | {
-        id: string;
+        ids: string[];
         startPointerX: number;
         startPointerY: number;
-        startX: number;
-        startY: number;
+        startPositions: Map<string, { x: number; y: number }>;
+        leadId: string;
+      }
+    | null
+  >(null);
+
+  const resizeRef = useRef<
+    | {
+        id: string;
+        handle: ResizeHandle;
+        startPointerX: number;
+        startPointerY: number;
+        startRect: Rect;
       }
     | null
   >(null);
@@ -89,24 +106,93 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
       const cursor = screenToWorld(event.clientX, event.clientY);
       dispatch({ type: "set-cursor", payload: cursor });
 
+      if (resizeRef.current) {
+        const resizing = state.objects.find((item) => item.id === resizeRef.current?.id);
+        if (!resizing || resizing.locked) {
+          return;
+        }
+
+        const deltaX = (event.clientX - resizeRef.current.startPointerX) / (state.transform.zoom * unitSize);
+        const deltaY = (event.clientY - resizeRef.current.startPointerY) / (state.transform.zoom * unitSize);
+
+        const start = resizeRef.current.startRect;
+        let x = start.x;
+        let y = start.y;
+        let width = start.width;
+        let height = start.height;
+
+        if (resizeRef.current.handle.includes("e")) {
+          width = Math.max(MIN_SIZE, start.width + deltaX);
+        }
+        if (resizeRef.current.handle.includes("s")) {
+          height = Math.max(MIN_SIZE, start.height + deltaY);
+        }
+        if (resizeRef.current.handle.includes("w")) {
+          width = Math.max(MIN_SIZE, start.width - deltaX);
+          x = start.x + (start.width - width);
+        }
+        if (resizeRef.current.handle.includes("n")) {
+          height = Math.max(MIN_SIZE, start.height - deltaY);
+          y = start.y + (start.height - height);
+        }
+
+        if (state.snap.enabled) {
+          x = roundToGrid(x, state.grid.size);
+          y = roundToGrid(y, state.grid.size);
+          width = Math.max(MIN_SIZE, roundToGrid(width, state.grid.size));
+          height = Math.max(MIN_SIZE, roundToGrid(height, state.grid.size));
+        }
+
+        const result = snapRect(
+          { x, y, width, height },
+          state.objects,
+          new Set([resizing.id]),
+          state.grid.size,
+          state.snap.enabled,
+          state.plot.width,
+          state.plot.height,
+        );
+
+        dispatch({ type: "set-guides", payload: { guides: result.guides } });
+        dispatch({ type: "update-object", payload: { id: resizing.id, patch: result.rect } });
+      }
+
       if (dragRef.current) {
-        const target = state.objects.find((item) => item.id === dragRef.current?.id);
-        if (!target || target.locked) {
+        const lead = state.objects.find((item) => item.id === dragRef.current?.leadId);
+        if (!lead || lead.locked) {
           return;
         }
 
         const deltaX = (event.clientX - dragRef.current.startPointerX) / (state.transform.zoom * unitSize);
         const deltaY = (event.clientY - dragRef.current.startPointerY) / (state.transform.zoom * unitSize);
 
-        let x = dragRef.current.startX + deltaX;
-        let y = dragRef.current.startY + deltaY;
+        let nextLeadX = dragRef.current.startPositions.get(lead.id)?.x ?? lead.x;
+        let nextLeadY = dragRef.current.startPositions.get(lead.id)?.y ?? lead.y;
+        nextLeadX += deltaX;
+        nextLeadY += deltaY;
 
-        if (state.snap.enabled) {
-          x = roundToGrid(x, state.grid.size);
-          y = roundToGrid(y, state.grid.size);
-        }
+        const snapResult = snapRect(
+          { x: nextLeadX, y: nextLeadY, width: lead.width, height: lead.height },
+          state.objects,
+          new Set(dragRef.current.ids),
+          state.grid.size,
+          state.snap.enabled,
+          state.plot.width,
+          state.plot.height,
+        );
 
-        dispatch({ type: "move-object", payload: { id: target.id, x, y } });
+        const finalDeltaX = snapResult.rect.x - (dragRef.current.startPositions.get(lead.id)?.x ?? lead.x);
+        const finalDeltaY = snapResult.rect.y - (dragRef.current.startPositions.get(lead.id)?.y ?? lead.y);
+
+        dispatch({ type: "set-guides", payload: { guides: snapResult.guides } });
+        dispatch({
+          type: "move-selection",
+          payload: {
+            ids: dragRef.current.ids,
+            deltaX: finalDeltaX,
+            deltaY: finalDeltaY,
+          },
+        });
       }
 
       if (panRef.current) {
@@ -121,21 +207,22 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
         });
       }
     },
-    [dispatch, screenToWorld, state.grid.size, state.objects, state.snap.enabled, state.transform.zoom, unitSize],
+    [dispatch, screenToWorld, state.grid.size, state.objects, state.plot.height, state.plot.width, state.snap.enabled, state.transform.zoom, unitSize],
   );
 
   const stopInteractions = useCallback(() => {
     dragRef.current = null;
+    resizeRef.current = null;
     panRef.current = null;
     setIsPanning(false);
-  }, []);
+    dispatch({ type: "set-guides", payload: { guides: [] } });
+  }, [dispatch]);
 
   const onViewportPointerDown = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
       const isPanIntent = event.button === 1 || (event.button === 0 && spacePressed);
       if (isPanIntent) {
         panRef.current = {
-
           startPointerX: event.clientX,
           startPointerY: event.clientY,
           startPanX: state.transform.panX,
@@ -146,7 +233,7 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
       }
 
       if (event.target === event.currentTarget) {
-        dispatch({ type: "select-object", payload: { id: null } });
+        dispatch({ type: "set-selection", payload: { ids: [] } });
       }
     },
     [dispatch, spacePressed, state.transform.panX, state.transform.panY],
@@ -159,16 +246,52 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
         return;
       }
 
-      dispatch({ type: "select-object", payload: { id: object.id } });
+      const isShift = event.shiftKey;
+      const selected = state.selectedIds.includes(object.id);
+      let nextSelection = state.selectedIds;
+
+      if (isShift) {
+        nextSelection = selected ? state.selectedIds.filter((id) => id !== object.id) : [...state.selectedIds, object.id];
+      } else if (!selected || state.selectedIds.length > 1) {
+        nextSelection = [object.id];
+      }
+
+      dispatch({ type: "set-selection", payload: { ids: nextSelection } });
+
+      const ids = nextSelection.includes(object.id) ? nextSelection : [object.id];
+      const startPositions = new Map(ids.map((id) => {
+        const target = state.objects.find((item) => item.id === id);
+        return [id, { x: target?.x ?? 0, y: target?.y ?? 0 }] as const;
+      }));
+
       dragRef.current = {
-        id: object.id,
+        ids,
+        leadId: object.id,
         startPointerX: event.clientX,
         startPointerY: event.clientY,
-        startX: object.x,
-        startY: object.y,
+        startPositions,
       };
     },
-    [dispatch],
+    [dispatch, state.objects, state.selectedIds],
+  );
+
+  const onResizeHandlePointerDown = useCallback(
+    (event: PointerEvent<HTMLButtonElement>, object: EditorObject, handle: ResizeHandle) => {
+      event.stopPropagation();
+      resizeRef.current = {
+        id: object.id,
+        handle,
+        startPointerX: event.clientX,
+        startPointerY: event.clientY,
+        startRect: {
+          x: object.x,
+          y: object.y,
+          width: object.width,
+          height: object.height,
+        },
+      };
+    },
+    [],
   );
 
   useEffect(() => {
@@ -176,7 +299,36 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
       if (event.code === "Space") {
         setSpacePressed(true);
       }
+
+      if (focusedOnFormField()) {
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) {
+          dispatch({ type: "redo" });
+        } else {
+          dispatch({ type: "undo" });
+        }
+        return;
+      }
+
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        dispatch({ type: "delete-selected" });
+        return;
+      }
+
+      const moveAmount = event.shiftKey ? 1 : 0.2;
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key) && state.selectedIds.length) {
+        event.preventDefault();
+        const deltaX = event.key === "ArrowLeft" ? -moveAmount : event.key === "ArrowRight" ? moveAmount : 0;
+        const deltaY = event.key === "ArrowUp" ? -moveAmount : event.key === "ArrowDown" ? moveAmount : 0;
+        dispatch({ type: "move-selection", payload: { ids: state.selectedIds, deltaX, deltaY } });
+      }
     };
+
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.code === "Space") {
         setSpacePressed(false);
@@ -189,7 +341,7 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, []);
+  }, [dispatch, state.selectedIds]);
 
   useEffect(() => {
     window.addEventListener("pointerup", stopInteractions);
@@ -201,6 +353,7 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
     onPointerMove,
     onViewportPointerDown,
     onObjectPointerDown,
+    onResizeHandlePointerDown,
     isPanning,
     screenToWorld,
   };
