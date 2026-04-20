@@ -32,6 +32,7 @@ type EditorAction =
   | { type: "move-selection"; payload: { ids: string[]; deltaX: number; deltaY: number } }
   | { type: "update-object"; payload: { id: string; patch: Partial<EditorObject> } }
   | { type: "update-many"; payload: { patches: Array<{ id: string; patch: Partial<EditorObject> }> } }
+  | { type: "duplicate-selected" }
   | { type: "delete-selected" }
   | { type: "set-cursor"; payload: { x: number; y: number } }
   | { type: "set-guides"; payload: { guides: AlignmentGuide[] } }
@@ -269,6 +270,49 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         ...state,
         objects: state.objects.filter((item) => !selectedSet.has(item.id)),
         selectedIds: [],
+      });
+    }
+    case "duplicate-selected": {
+      if (!state.selectedIds.length) {
+        return state;
+      }
+
+      const selectedSet = new Set(state.selectedIds);
+      const selectedObjects = state.objects.filter((item) => selectedSet.has(item.id));
+      if (!selectedObjects.length) {
+        return state;
+      }
+
+      const currentMaxZ = state.objects.reduce((max, item) => Math.max(max, item.zIndex), 0);
+      let nextZ = currentMaxZ;
+      const duplicateOffset = 0.6;
+
+      const duplicates = selectedObjects.map((item) => {
+        nextZ += 1;
+        const rect = clampRectToPlot(
+          {
+            x: item.x + duplicateOffset,
+            y: item.y + duplicateOffset,
+            width: item.width,
+            height: item.height,
+          },
+          state.plot.width,
+          state.plot.height,
+        );
+
+        return {
+          ...item,
+          id: `obj-${crypto.randomUUID()}`,
+          x: rect.x,
+          y: rect.y,
+          zIndex: nextZ,
+        };
+      });
+
+      return withHistory(state, {
+        ...state,
+        objects: [...state.objects, ...duplicates],
+        selectedIds: duplicates.map((item) => item.id),
       });
     }
     case "set-cursor":
