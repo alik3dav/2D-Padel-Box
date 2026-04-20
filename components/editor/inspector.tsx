@@ -12,54 +12,62 @@ const sections = ["Position", "Size", "Appearance", "Rotation", "Layer", "Lock"]
 
 export function Inspector() {
   return (
-    <aside className="flex h-full w-80 flex-col border-l border-border/80 bg-card/40 p-4">
-      <div className="mb-3">
-        <h2 className="text-sm font-semibold">Inspector</h2>
-        <p className="text-xs text-muted-foreground">Properties and plot setup</p>
+    <aside className="flex h-full w-72 flex-col border-l border-border/70 bg-[#0c121b]/70 p-3.5">
+      <div className="mb-2.5">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/90">Inspector</h2>
+        <p className="text-[11px] text-muted-foreground/85">Properties and plot setup</p>
       </div>
 
-      <div className="space-y-3 overflow-y-auto pr-1">
+      <div className="space-y-2.5 overflow-y-auto pr-0.5">
         <InspectorEmpty />
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Plot Setup</CardTitle>
+        <Card className="border-border/70 bg-card/40 shadow-none">
+          <CardHeader className="pb-2.5">
+            <CardTitle className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Plot Setup</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="plot-width">Width (meters)</Label>
-              <Input id="plot-width" defaultValue="40" />
+          <CardContent className="space-y-2.5">
+            <div className="space-y-1">
+              <Label htmlFor="plot-width" className="text-[11px] text-muted-foreground">
+                Width (meters)
+              </Label>
+              <Input id="plot-width" defaultValue="40" className="h-8 border-border/65 bg-background/30 text-xs" />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="plot-height">Height (meters)</Label>
-              <Input id="plot-height" defaultValue="25" />
+            <div className="space-y-1">
+              <Label htmlFor="plot-height" className="text-[11px] text-muted-foreground">
+                Height (meters)
+              </Label>
+              <Input id="plot-height" defaultValue="25" className="h-8 border-border/65 bg-background/30 text-xs" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/70 bg-card/40 shadow-none">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Properties</CardTitle>
+            <CardTitle className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Properties</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="basic">Basic</TabsTrigger>
-                <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              <TabsList className="grid h-8 w-full grid-cols-2 bg-muted/40 p-0.5">
+                <TabsTrigger value="basic" className="text-xs">
+                  Basic
+                </TabsTrigger>
+                <TabsTrigger value="advanced" className="text-xs">
+                  Advanced
+                </TabsTrigger>
               </TabsList>
-              <TabsContent value="basic">
+              <TabsContent value="basic" className="mt-2">
                 <Accordion type="single" collapsible defaultValue="Position" className="w-full">
                   {sections.map((section) => (
                     <AccordionItem value={section} key={section}>
-                      <AccordionTrigger>{section}</AccordionTrigger>
+                      <AccordionTrigger className="py-2 text-xs">{section}</AccordionTrigger>
                       <AccordionContent>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <div className="grid grid-cols-2 gap-2">
-                            <Input placeholder="X" />
-                            <Input placeholder="Y" />
+                            <Input placeholder="X" className="h-8 border-border/65 bg-background/30 text-xs" />
+                            <Input placeholder="Y" className="h-8 border-border/65 bg-background/30 text-xs" />
                           </div>
-                          <div className="flex items-center justify-between rounded-md border border-border/70 px-2.5 py-2">
-                            <Label className="text-xs text-muted-foreground">Enabled</Label>
+                          <div className="flex items-center justify-between rounded-md border border-border/65 bg-background/25 px-2.5 py-1.5">
+                            <Label className="text-[11px] text-muted-foreground">Enabled</Label>
                             <Switch />
                           </div>
                         </div>
@@ -68,8 +76,8 @@ export function Inspector() {
                   ))}
                 </Accordion>
               </TabsContent>
-              <TabsContent value="advanced">
-                <div className="rounded-md border border-dashed border-border/80 p-3 text-xs text-muted-foreground">
+              <TabsContent value="advanced" className="mt-2">
+                <div className="rounded-md border border-dashed border-border/70 bg-background/20 p-3 text-xs text-muted-foreground">
                   Advanced controls will appear in Phase 2.
                 </div>
               </TabsContent>
