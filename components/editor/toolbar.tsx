@@ -2,7 +2,7 @@
 
 import { type ReactNode, useState } from "react";
 
-import { FolderOpen, Grid3X3, Maximize, Minus, MousePointer2, Plus, Redo2, Magnet, Save, Undo2, Download } from "lucide-react";
+import { Copy, Download, FolderOpen, Grid3X3, Magnet, Maximize, Minus, MousePointer2, Plus, Redo2, Save, Trash2, Undo2 } from "lucide-react";
 
 import { ProjectManagerDialog } from "@/components/editor/project-manager-dialog";
 import { useEditor, useProjects } from "@/components/editor/editor-context";
@@ -19,11 +19,13 @@ function ToolbarIconButton({
   icon,
   label,
   active,
+  disabled,
   onClick,
 }: {
   icon: ReactNode;
   label: string;
   active?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
 }) {
   return (
@@ -34,8 +36,10 @@ function ToolbarIconButton({
           variant="ghost"
           size="icon"
           onClick={onClick}
+          disabled={disabled}
           className={cn(
             "h-8 w-8 rounded-md text-muted-foreground/85 hover:bg-white/[0.05] hover:text-foreground/95",
+            disabled && "pointer-events-none opacity-45",
             active && "bg-primary/20 text-primary hover:bg-primary/25",
           )}
         >
@@ -55,6 +59,7 @@ const saveText: Record<ReturnType<typeof useProjects>["saveStatus"], string> = {
 
 export function Toolbar() {
   const { state, dispatch } = useEditor();
+  const hasSelection = state.selectedIds.length > 0;
   const {
     currentProjectName,
     hasUnsavedChanges,
@@ -155,6 +160,18 @@ export function Toolbar() {
               icon={<Redo2 className="h-4 w-4" />}
               label="Redo"
               onClick={() => dispatch({ type: "redo" })}
+            />
+            <ToolbarIconButton
+              icon={<Copy className="h-4 w-4" />}
+              label="Duplicate (Ctrl/Cmd + D)"
+              disabled={!hasSelection}
+              onClick={() => dispatch({ type: "duplicate-selected" })}
+            />
+            <ToolbarIconButton
+              icon={<Trash2 className="h-4 w-4" />}
+              label="Delete"
+              disabled={!hasSelection}
+              onClick={() => dispatch({ type: "delete-selected" })}
             />
             <Separator orientation="vertical" className="mx-1 h-5 bg-white/8" />
             <ToolbarIconButton

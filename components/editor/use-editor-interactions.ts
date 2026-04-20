@@ -322,6 +322,12 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
         return;
       }
 
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        dispatch({ type: "duplicate-selected" });
+        return;
+      }
+
       if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         dispatch({ type: "delete-selected" });
