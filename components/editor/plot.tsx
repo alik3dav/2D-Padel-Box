@@ -51,7 +51,7 @@ export function Plot() {
   const gridSizePx = state.grid.size * UNIT_SIZE;
 
   return (
-    <div className="h-full w-full p-5">
+    <div className="h-full w-full">
       <div
         ref={viewportRef}
         className="relative h-full w-full overflow-hidden rounded-xl bg-[#101923] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035),inset_0_16px_28px_rgba(255,255,255,0.01)]"

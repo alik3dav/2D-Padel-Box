@@ -12,8 +12,8 @@ export function Workspace() {
         }}
       />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(255,255,255,0.03),transparent_56%)]" />
-      <div className="relative z-10 h-full w-full p-5">
-        <div className="h-full rounded-2xl bg-[#0e1620] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_45px_rgba(0,0,0,0.28)]">
+      <div className="relative z-10 h-full w-full">
+        <div className="h-full">
           <Plot />
         </div>
       </div>
