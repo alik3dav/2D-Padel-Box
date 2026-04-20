@@ -3,13 +3,15 @@
 import { InspectorEmpty } from "@/components/editor/inspector-empty";
 import { useEditor } from "@/components/editor/editor-context";
 import type { EditorObject } from "@/lib/editor-types";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 export function Inspector() {
   const { state, dispatch } = useEditor();
-  const selected = state.objects.find((item) => item.id === state.selectedId) ?? null;
+  const selected = state.objects.find((item) => item.id === state.selectedIds[0]) ?? null;
+  const selectedCount = state.selectedIds.length;
 
   const updateSelected = (patch: Partial<EditorObject>) => {
     if (!selected) {
@@ -31,7 +33,9 @@ export function Inspector() {
         ) : (
           <section className="space-y-3 rounded-lg bg-[#101923] p-3">
             <h3 className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/62">Selection</h3>
-            <p className="text-xs font-medium text-foreground/88">{selected.label}</p>
+            <p className="text-xs font-medium text-foreground/88">
+              {selected.label} {selectedCount > 1 ? `(+${selectedCount - 1} more)` : ""}
+            </p>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-[11px] text-muted-foreground/72">X</Label>
@@ -72,6 +76,28 @@ export function Inspector() {
                   onChange={(event) => updateSelected({ height: Number(event.target.value) })}
                   className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1"
                 />
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label className="text-[11px] text-muted-foreground/72">Rotation (°)</Label>
+                <Input
+                  value={selected.rotation}
+                  type="number"
+                  step={1}
+                  onChange={(event) => updateSelected({ rotation: Number(event.target.value) })}
+                  className="h-8 border-transparent bg-[#111b26] text-xs focus-visible:ring-1"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[11px] text-muted-foreground/72">Layer Order</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button className="h-8 text-xs" variant="secondary" onClick={() => dispatch({ type: "bring-forward" })}>
+                  Bring Forward
+                </Button>
+                <Button className="h-8 text-xs" variant="secondary" onClick={() => dispatch({ type: "send-backward" })}>
+                  Send Backward
+                </Button>
               </div>
             </div>
           </section>

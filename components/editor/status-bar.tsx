@@ -6,7 +6,7 @@ import { useEditor } from "@/components/editor/editor-context";
 
 export function StatusBar() {
   const { state } = useEditor();
-  const selected = state.objects.find((item) => item.id === state.selectedId);
+  const selected = state.objects.find((item) => item.id === state.selectedIds[0]);
 
   return (
     <footer className="flex h-8 items-center justify-between bg-[#0c121a]/52 px-4 text-[11px] text-muted-foreground/62 backdrop-blur-md">
@@ -15,7 +15,7 @@ export function StatusBar() {
         <span>
           Coordinates X {state.cursor.x.toFixed(2)}m, Y {state.cursor.y.toFixed(2)}m
         </span>
-        <span>Selection {selected ? selected.label : "None"}</span>
+        <span>Selection {selected ? `${selected.label} (${state.selectedIds.length})` : "None"}</span>
       </div>
       <div className="flex items-center gap-2.5">
         <span className="inline-flex items-center gap-1.5">
