@@ -151,6 +151,7 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
           state.snap.enabled,
           state.plot.width,
           state.plot.height,
+          resizing.rotation,
         );
 
         dispatch({ type: "set-guides", payload: { guides: result.guides } });
@@ -180,6 +181,7 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
           state.snap.enabled,
           state.plot.width,
           state.plot.height,
+          lead.rotation,
         );
 
         const finalDeltaX = snapResult.rect.x - (dragSession.startPositions.get(lead.id)?.x ?? lead.x);

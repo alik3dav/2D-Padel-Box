@@ -7,6 +7,17 @@ export type Rect = {
   height: number;
 };
 
+function getRotatedBoundingSize(width: number, height: number, rotation: number) {
+  const radians = (rotation * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(radians));
+  const sin = Math.abs(Math.sin(radians));
+
+  return {
+    width: width * cos + height * sin,
+    height: width * sin + height * cos,
+  };
+}
+
 type SnapResult = {
   rect: Rect;
   guides: AlignmentGuide[];
@@ -21,11 +32,17 @@ const centerY = (rect: Rect) => rect.y + rect.height / 2;
 const right = (rect: Rect) => rect.x + rect.width;
 const bottom = (rect: Rect) => rect.y + rect.height;
 
-export function clampRectToPlot(rect: Rect, plotWidth: number, plotHeight: number): Rect {
+export function clampRectToPlot(rect: Rect, plotWidth: number, plotHeight: number, rotation = 0): Rect {
+  const rotatedSize = getRotatedBoundingSize(rect.width, rect.height, rotation);
+  const minX = (rotatedSize.width - rect.width) / 2;
+  const minY = (rotatedSize.height - rect.height) / 2;
+  const maxX = plotWidth - (rotatedSize.width + rect.width) / 2;
+  const maxY = plotHeight - (rotatedSize.height + rect.height) / 2;
+
   return {
     ...rect,
-    x: clamp(rect.x, 0, Math.max(0, plotWidth - rect.width)),
-    y: clamp(rect.y, 0, Math.max(0, plotHeight - rect.height)),
+    x: clamp(rect.x, minX, Math.max(minX, maxX)),
+    y: clamp(rect.y, minY, Math.max(minY, maxY)),
   };
 }
 
@@ -61,6 +78,7 @@ export function snapRect(
   snapEnabled: boolean,
   plotWidth: number,
   plotHeight: number,
+  movingRotation = 0,
 ): SnapResult {
   const candidate: Rect = { ...rect };
   const guides: AlignmentGuide[] = [];
@@ -71,7 +89,7 @@ export function snapRect(
   }
 
   if (!snapEnabled) {
-    return { rect: clampRectToPlot(candidate, plotWidth, plotHeight), guides };
+    return { rect: clampRectToPlot(candidate, plotWidth, plotHeight, movingRotation), guides };
   }
 
   let bestDeltaX = 0;
@@ -133,7 +151,7 @@ export function snapRect(
   }
 
   return {
-    rect: clampRectToPlot(candidate, plotWidth, plotHeight),
+    rect: clampRectToPlot(candidate, plotWidth, plotHeight, movingRotation),
     guides,
   };
 }
