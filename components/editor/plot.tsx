@@ -54,7 +54,7 @@ export function Plot() {
     <div className="h-full w-full">
       <div
         ref={viewportRef}
-        className="relative h-full w-full overflow-hidden rounded-xl bg-[#101923] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035),inset_0_16px_28px_rgba(255,255,255,0.01)]"
+        className="relative h-full w-full overflow-hidden "
         onWheel={onWheel}
         onPointerDown={onViewportPointerDown}
         onPointerMove={onPointerMove}
