@@ -3,7 +3,7 @@
 import { type PointerEvent, type RefObject, type WheelEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { useEditor } from "@/components/editor/editor-context";
-import { roundToGrid, snapRect, type Rect } from "@/lib/editor-geometry";
+import { clampRectToPlot, roundToGrid, snapRect, type Rect } from "@/lib/editor-geometry";
 import type { EditorObject } from "@/lib/editor-types";
 
 type UseEditorInteractionsArgs = {
@@ -221,23 +221,34 @@ export function useEditorInteractions({ viewportRef, unitSize }: UseEditorIntera
           y: deltaY,
         });
 
+        const normalizedRotation = ((resizing.rotation % 360) + 360) % 360;
+        const isAxisAligned = normalizedRotation % 90 === 0;
+
         if (state.snap.enabled) {
-          x = roundToGrid(x, state.grid.size);
-          y = roundToGrid(y, state.grid.size);
           width = Math.max(MIN_SIZE, roundToGrid(width, state.grid.size));
           height = Math.max(MIN_SIZE, roundToGrid(height, state.grid.size));
+
+          if (isAxisAligned) {
+            x = roundToGrid(x, state.grid.size);
+            y = roundToGrid(y, state.grid.size);
+          }
         }
 
-        const result = snapRect(
-          { x, y, width, height },
-          state.objects,
-          new Set([resizing.id]),
-          state.grid.size,
-          state.snap.enabled,
-          state.plot.width,
-          state.plot.height,
-          resizing.rotation,
-        );
+        const result = isAxisAligned
+          ? snapRect(
+              { x, y, width, height },
+              state.objects,
+              new Set([resizing.id]),
+              state.grid.size,
+              state.snap.enabled,
+              state.plot.width,
+              state.plot.height,
+              resizing.rotation,
+            )
+          : {
+              rect: clampRectToPlot({ x, y, width, height }, state.plot.width, state.plot.height, resizing.rotation),
+              guides: [],
+            };
 
         dispatch({ type: "set-guides", payload: { guides: result.guides } });
         dispatch({ type: "update-object", payload: { id: resizing.id, patch: result.rect } });

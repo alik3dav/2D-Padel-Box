@@ -15,6 +15,7 @@ export const OBJECT_PRESETS: ObjectPreset[] = [
   { type: "cafe", label: "Café / Bar", width: 5, height: 3 },
   { type: "toilets", label: "Toilets", width: 3, height: 2 },
   { type: "parking", label: "Parking", width: 6, height: 3 },
+  { type: "car", label: "Car", width: 2, height: 1 },
   { type: "custom-zone", label: "Custom Zone", width: 4, height: 3 },
   { type: "text-label", label: "Text Label", width: 3, height: 1 },
 ];
